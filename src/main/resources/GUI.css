@@ -1,0 +1,37 @@
+.content{
+    -fx-background-color:rgba(123,186,238,1);
+    -fx-background-radius:10px;
+    -fx-padding:10px;
+}
+.catalog{
+    -fx-background-color:rgba(123,186,238,0.3);
+}
+.catalog:hover{
+    -fx-background-color:rgba(123,186,238,0.5);
+}
+.list-cell:even{
+    -fx-background-color:rgba(123,186,238,0.1);
+    -fx-text-fill: black;
+}
+.list-cell:odd{
+    -fx-background-color:rgba(255,255,255,0);
+    -fx-text-fill: black;
+}
+.list-view {
+    -fx-background-color: transparent;
+    -fx-text-fill: black;
+}
+.list-cell:selected {
+    -fx-background-color:rgba(124,124,124,0.6);
+    -fx-text-fill: black;
+}
+.list-cell:hover{
+    -fx-background-color:rgba(124,124,124,0.5);
+    -fx-text-fill: black;
+}
+.button{
+    -fx-background-color:rgba(124,124,124,0);
+}
+.button:hover{
+    -fx-background-color:rgba(124,124,124,0.2);
+}
