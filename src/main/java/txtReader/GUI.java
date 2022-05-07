@@ -16,7 +16,6 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
-import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -25,7 +24,7 @@ import javafx.util.Duration;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /*
@@ -71,8 +70,8 @@ public class GUI extends Application {
     int is_loading=0;
     String name;
     String path;
-    String test="/src/main";
-    //String test="";
+    //String test="/src/main";
+    String test="";
     String cssfile="file:/"+System.getProperty("user.dir")+test+"/resources"+"/GUI.css";
     String tempfile=System.getProperty("user.dir")+test+"/resources"+"/lastview";
     void warning(String string){
@@ -117,6 +116,7 @@ public class GUI extends Application {
             pane.getChildren().clear();
             pane.getChildren().add(chapter.getPage(page_num));
         }
+        System.gc();
     }
     void getPane(){
         pane=new Pane();
@@ -257,12 +257,15 @@ public class GUI extends Application {
         listView.getSelectionModel().selectedIndexProperty().addListener((ov, oldval, newval) -> {
             if (is_loading==1)
                 return;
+            if (oldval.equals(-1))
+                return;
             pane.getChildren().clear();
             chapter = new Chapter_GUI(book.getChapter(newval.intValue()), pane.getWidth(),
                     pane.getHeight(), 14.5, has_chapter);
             pane.getChildren().add(chapter.getPage(0));
             page_num=0;
             chapter_num=newval.intValue();
+            System.gc();
         });
     }
     void closeCatalog(){//
@@ -298,6 +301,8 @@ public class GUI extends Application {
                     pane.getChildren().add(chapter.getPage(page_num));
                     hBox.getChildren().add(1, listView);
                     has_catalog = 1;
+                    listView.getSelectionModel().select(chapter_num);
+                    listView.scrollTo(chapter_num);
                 }
             }
             else {
@@ -334,6 +339,7 @@ public class GUI extends Application {
         page_num=Math.min(page_num,chapter.getPage_num()-1);
         pane.getChildren().clear();
         pane.getChildren().add(chapter.getPage(page_num));
+        System.gc();
     }
     void initText() {
         //todo:修改字体大小功能
@@ -344,6 +350,7 @@ public class GUI extends Application {
             in.close();
             showText();
         } catch (FileNotFoundException e) {
+            AtomicBoolean isLoaded= new AtomicBoolean(true);
             pane.getChildren().clear();
             pane.getChildren().add(new Text("Loading..."));
             Task<Void> task = new Task<>() {
@@ -352,6 +359,8 @@ public class GUI extends Application {
                     //子线程获取主线程变量
                     is_loading=1;
                     book = new Book(name, path);
+                    if(!isLoaded.get())
+                        return null;
                     ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(output));
                     out.writeObject(book);
                     out.close();
@@ -359,7 +368,8 @@ public class GUI extends Application {
                     Platform.runLater(new Runnable() {
                         @Override
                         public void run() {
-                            showText();
+                            if (isLoaded.get())
+                                showText();
                         }
                     });
                     return null;
@@ -367,7 +377,19 @@ public class GUI extends Application {
             };
             Thread thread = new Thread(task);
             thread.start();
-
+            task.setOnCancelled(event->{
+                thread.interrupt();
+                book=null;
+                pane.getChildren().clear();
+                pane.getChildren().add(new Text("Stopped successfully ~"));
+            });
+            Button stop =new Button("停止加载");
+            stop.setLayoutY(20);
+            stop.setOnMouseClicked(event->{
+                isLoaded.set(false);
+                task.cancel();
+            });
+            pane.getChildren().add(stop);
         } catch (IOException | ClassNotFoundException e) {
             e.printStackTrace();
         }
@@ -407,11 +429,7 @@ public class GUI extends Application {
     }
     //打开新书后大小不对  点目录会消失
     public void start(Stage stage) {
-        //todo:记得重构压内存
         this.stage=stage;
-        //加css后slider不显示
-        //todo：上次阅读缓存
-        //todo:每次阅读下一页内存消耗很大
         cssfile=cssfile.replaceAll("\\\\","/");
         tempfile=tempfile.replaceAll("\\\\","/");
         //正则和java各转义一次
@@ -450,6 +468,7 @@ public class GUI extends Application {
         DragUtil.addDragListener(stage,pane);
         DrawUtil.addDrawFunc(stage,background);
         stage.show();
+        System.gc();
         stage_X=stage.getX();
         stage_Y=stage.getY();
     }

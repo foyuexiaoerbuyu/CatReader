@@ -101,11 +101,11 @@ class Book implements Serializable {
         }
         return charset;
     }
-    private void read(){
+    private void read (){
         String r="\\s*(第[0-9|零一二三四五六七八九十壹贰叁肆伍陆柒捌玖拾百千万]+[章卷回话]" +
                 "|[c|C]hapter.*[0-9]|☆、.*|[上中下终]卷" +
                 "|卷[0-9|零一二三四五六七八九十壹贰叁肆伍陆柒捌玖拾]+" +
-                "|引子|楔子|序|[Ll][Vv].[0-9]+|－Quiz [0-9]+).*";
+                "|[Ll][Vv].[0-9]+|－Quiz [0-9]+|[引子|楔子|序|序章][\n\\s]).*";
         Pattern p=Pattern.compile(r);
         chapters=new ArrayList<>();
         try {
@@ -118,6 +118,8 @@ class Book implements Serializable {
             String now_text=null,title=null;
             in.seek(start);
             while((t=in.readLine())!=null){
+                if(Thread.currentThread().isInterrupted())
+                    return;
                 now_pos=in.getFilePointer();
                 now_text=convertCode(t);
                 if(!now_text.contains("。")&&!now_text.contains("：“")){
